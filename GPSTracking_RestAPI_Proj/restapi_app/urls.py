@@ -1,11 +1,14 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import path
-from .views import FleetOwnerView
+# from .views import FleetOwnerView
+from .views import FleetOwnerRegisterView, FleetOwnerLoginView
 
 urlpatterns = [
-    path('fleet_owners', FleetOwnerView.as_view(), name='fleet_owners'),
-    path('fleet_owners/<int:id>', FleetOwnerView.as_view(), name='fleet_owners')
+    # path('fleet_owners', FleetOwnerView.as_view(), name='fleet_owners'),
+    # path('fleet_owners/<int:id>', FleetOwnerView.as_view(), name='fleet_owners')
+    path('register/', FleetOwnerRegisterView.as_view(), name='fleetowner-register'),
+    path('login/', FleetOwnerLoginView.as_view(), name='fleetowner-login'),
 ]
 
 

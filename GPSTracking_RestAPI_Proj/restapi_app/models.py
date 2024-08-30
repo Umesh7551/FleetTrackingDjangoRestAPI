@@ -1,17 +1,18 @@
 import hashlib
 from django.db import models
-from django.contrib.auth.models import AbstractUser, User
-from django.conf import settings
+# from django.contrib.auth.models import AbstractUser, User
+from rest_framework_simplejwt.tokens import RefreshToken
+# from django.conf import settings
 
 
-class FleetOwner(AbstractUser):
+class FleetOwner(models.Model):
     first_name = models.CharField(verbose_name='First Name', max_length=200)
     last_name = models.CharField(verbose_name='Last Name', max_length=200)
     # username = models.CharField(verbose_name='Username', max_length=200, unique=True)
     email = models.EmailField(verbose_name='Email Address', max_length=100, unique=True)
-    # password = models.CharField(verbose_name='Password', max_length=200, blank=True)
+    password = models.CharField(verbose_name='Password', max_length=200, blank=True)
     # confirm_password = models.CharField(verbose_name='Confirm Password', max_length=200, blank=True)
-    contact_number = models.CharField(verbose_name='Contact Number', max_length=10)
+    contact_number = models.CharField(verbose_name='Contact Number', max_length=12)
     address = models.TextField(verbose_name='Address', max_length=200)
     aadhar_number = models.CharField(verbose_name='Aadhar Number', max_length=12, unique=True)
     pan_number = models.CharField(verbose_name='PAN Number', max_length=10, unique=True)
@@ -23,7 +24,14 @@ class FleetOwner(AbstractUser):
         db_table = 'fleetowner'
 
     def __str__(self):
-        return self.username
+        return self.first_name + " " + self.last_name
+
+    def tokens(self):
+        refresh = RefreshToken.for_user(self)
+        return {
+            'refresh_token': str(refresh),
+            'access_token': str(refresh.access_token),
+        }
 
     def set_password(self, raw_password):
         self.password = hashlib.sha256(raw_password.encode()).hexdigest()

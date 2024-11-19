@@ -1,14 +1,14 @@
 from django.contrib import admin
-from .models import FleetOwner, Car, GPSTracker, Tracker_data, Driver, RFID, Zone
+from .models import Profile, Car, GPSTracker, Tracker_data, Driver, RFID, Zone
 
 
 # Register your models here.
 
-@admin.register(FleetOwner)
-class FleetOwnerAdmin(admin.ModelAdmin):
-    list_display = ['id', 'first_name', 'last_name', 'email', 'contact_number', 'address', 'aadhar_number',
-                    'pan_number', 'resident_proof']
-    search_fields = ['email', 'contact_number', 'aadhar_number', 'pan_number']
+# @admin.register(FleetOwner)
+# class FleetOwnerAdmin(admin.ModelAdmin):
+#     list_display = ['id', 'first_name', 'last_name', 'email', 'contact_number', 'address', 'aadhar_number',
+#                     'pan_number', 'resident_proof']
+#     search_fields = ['email', 'contact_number', 'aadhar_number', 'pan_number']
 
 
 @admin.register(Car)

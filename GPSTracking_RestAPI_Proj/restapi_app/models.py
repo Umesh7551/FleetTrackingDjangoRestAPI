@@ -1,51 +1,34 @@
+
 import hashlib
 from django.db import models
-# from django.contrib.auth.models import AbstractUser, User
-from rest_framework_simplejwt.tokens import RefreshToken
-# from django.conf import settings
+from django.contrib.auth.models import User
 
 
-class FleetOwner(models.Model):
-    first_name = models.CharField(verbose_name='First Name', max_length=200)
-    last_name = models.CharField(verbose_name='Last Name', max_length=200)
-    # username = models.CharField(verbose_name='Username', max_length=200, unique=True)
-    email = models.EmailField(verbose_name='Email Address', max_length=100, unique=True)
-    password = models.CharField(verbose_name='Password', max_length=200, blank=True)
-    # confirm_password = models.CharField(verbose_name='Confirm Password', max_length=200, blank=True)
-    contact_number = models.CharField(verbose_name='Contact Number', max_length=12)
-    address = models.TextField(verbose_name='Address', max_length=200)
-    aadhar_number = models.CharField(verbose_name='Aadhar Number', max_length=12, unique=True)
-    pan_number = models.CharField(verbose_name='PAN Number', max_length=10, unique=True)
-    resident_proof = models.ImageField(verbose_name='Resident Proof', upload_to='fleetowner_uploads/')
-    last_login = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    # user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    fleetowner = models.ForeignKey(User, related_name='support_users', on_delete=models.CASCADE, null=True,
+                                   blank=True)
+    address1 = models.CharField(max_length=255)
+    address2 = models.CharField(max_length=255, blank=True, null=True)
+    city = models.CharField(max_length=255)
+    state = models.CharField(max_length=255)
+    pin = models.CharField(max_length=6)
+    country = models.CharField(max_length=255)
+    mobile = models.CharField(max_length=15)
+    profile_photo = models.ImageField(verbose_name='Profile Photo', upload_to='profile_photos/')
 
     class Meta:
-        db_table = 'fleetowner'
+        db_table = 'profile'
 
     def __str__(self):
-        return self.first_name + " " + self.last_name
-
-    def tokens(self):
-        refresh = RefreshToken.for_user(self)
-        return {
-            'refresh_token': str(refresh),
-            'access_token': str(refresh.access_token),
-        }
-
-    def set_password(self, raw_password):
-        self.password = hashlib.sha256(raw_password.encode()).hexdigest()
-
-    def check_password(self, raw_password):
-        hashed_password = hashlib.sha256(raw_password.encode()).hexdigest()
-        return self.password == hashed_password
+        return f'{self.user} Profile'
 
 
 class GPSTracker(models.Model):
     serial_number = models.CharField(verbose_name='Serial Number', max_length=200, unique=True)
     # car = models.OneToOneField(Car, on_delete=models.CASCADE)
     # fleet_owner = models.ForeignKey(FleetOwner, on_delete=models.CASCADE, blank=True, default='')
-
+    added_by = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, default=1)  # Track who added the tracker
     class Meta:
         db_table = 'gpstracker'
 
@@ -54,26 +37,26 @@ class GPSTracker(models.Model):
 
 
 class Car(models.Model):
-    registration_number = models.CharField(verbose_name='Registration Number', max_length=20, unique=True)
+    registration_number = models.CharField(verbose_name='Registration Number', max_length=20)
     registration_date = models.DateField(verbose_name='Registration Date')
     vehicle_name = models.CharField(verbose_name='Vehicle Name', max_length=100)
     colour = models.CharField(verbose_name='Colour', max_length=50)
     model = models.CharField(verbose_name='Model', max_length=50)
-    chassis_number = models.CharField(verbose_name='Chassis Number', max_length=100, unique=True)
-    tracker = models.ForeignKey(GPSTracker, on_delete=models.SET_NULL, blank=True, null=True)
-    insurance = models.BooleanField(verbose_name='Insurance', default=1)
-    puc = models.BooleanField(verbose_name='PUC', default=1)
+    chassis_number = models.CharField(verbose_name='Chassis Number', max_length=100)
+    # tracker = models.ForeignKey(GPSTracker, on_delete=models.SET_NULL, blank=True, null=True)
+    tracker = models.OneToOneField(GPSTracker, on_delete=models.SET_NULL, null=True, blank=True)
+    insurance = models.BooleanField(verbose_name='Insurance', default=False)
+    puc = models.BooleanField(verbose_name='PUC', default=False)
     seating_capacity = models.CharField(verbose_name='Seating Capacity', max_length=2)
     fuel_type = models.CharField(verbose_name='Fuel Type', max_length=100)
-    air_condition = models.BooleanField(verbose_name='Air Condition', default=1)
-    owner = models.ForeignKey(FleetOwner, on_delete=models.CASCADE, blank=True, related_name='cars')
+    air_condition = models.BooleanField(verbose_name='Air Condition', default=False)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, blank=True)
 
     class Meta:
         db_table = 'car'
 
     def __str__(self):
         return self.registration_number
-
 
 class Zone(models.Model):
     zone_name = models.CharField(verbose_name='Zone Name', max_length=100)
@@ -97,10 +80,11 @@ class Tracker_data(models.Model):
     accuracy = models.FloatField(verbose_name='Accuracy', max_length=10)
     timestamp = models.DateTimeField(verbose_name='Timestamp', auto_now=True)
     panic = models.BooleanField(verbose_name='Panic', default=0)
-    ignition = models.BooleanField(verbose_name='Ignition', default=1)
+    ignition = models.BooleanField(verbose_name='Ignition', default=0)
     air_condition = models.CharField(verbose_name='Air Condition', max_length=10)
     # fleet_owner = models.ForeignKey(FleetOwner, on_delete=models.CASCADE, blank=True, default='')
     status = models.CharField(max_length=2, default='01')  # Status field
+    # owner = models.ForeignKey(User, on_delete=models.CASCADE)
     class Meta:
         db_table = 'tracker_data'
 
@@ -111,6 +95,7 @@ class Tracker_data(models.Model):
 class RFID(models.Model):
     rfid_code = models.CharField(verbose_name='RFID Code', max_length=100, unique=True)
     is_active = models.BooleanField(verbose_name='Is Active', default=True)
+    added_by = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, default=1)  # Track who added the rfid
 
     class Meta:
         db_table = 'rfid'
@@ -136,3 +121,11 @@ class Driver(models.Model):
         return self.driver_name
 
 
+class FleetOwnerSupport(models.Model):
+    fleetowner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='fleetowner')
+    fleetowner_support_user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='fleetowner_support_person')
+
+    class Meta:
+        db_table = 'fleetowner_support'
+    def __str__(self):
+        return f"{self.fleetowner}'s FleetOwner Support Person: {self.fleetowner_support_user}"

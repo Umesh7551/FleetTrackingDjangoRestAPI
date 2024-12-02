@@ -3,20 +3,93 @@ from django.utils import timezone
 from django.db import models
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+from .models import User, Profile, Car, GPSTracker, Tracker_data, Driver, RFID, Zone
 
-from .models import User, Car, GPSTracker, Tracker_data, Driver, RFID, Zone
 
-
-class UserSerializer(serializers.ModelSerializer):
+# class UserRegistrationSerializer(serializers.ModelSerializer):
+#     password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+#
+#     class Meta:
+#         model = User
+#         # fields = '__all__'
+#         fields = ['username', 'email', 'password']
+#
+#     def create(self, validated_data):
+#         user = User.objects.create_user(
+#             username=validated_data['username'],
+#             email=validated_data['email'],
+#             password=validated_data['password']
+#
+#         )
+#         return user
+class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = '__all__'
+        fields = ['username', 'email', 'password']
+        extra_kwargs = {'password': {'write_only': True}}
 
+    def validate_email(self, email):
+        if User.objects.filter(email=email).exists():
+            raise serializers.ValidationError('A user with this email already exists.')
+        return email
+
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=validated_data['password']
+        )
+        user.is_active = False # Set account to in-active
+        user.save()
+        return user
+
+class DeactivateAccountSerializer(serializers.Serializer):
+    confirm_deactivation = serializers.BooleanField(required=True)
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = ['phone', 'address', 'city', 'state', 'country']
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    profile = ProfileSerializer
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'profile']
+
+    def update(self, instance, validated_data):
+        profile_data = validated_data.pop('profile', {})
+        profile = instance.profile
+
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.email = validated_data.get('email', instance.email)
+        instance.save()
+
+        for attr, value in profile_data.items():
+            setattr(profile, attr, value)
+        profile.save()
+
+        return instance
+
+
+
+# class CarSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Car
+#         fields = '__all__'
 
 class CarSerializer(serializers.ModelSerializer):
     class Meta:
         model = Car
-        fields = '__all__'
+        fields = [
+            'id', 'registration_number', 'registration_date', 'vehicle_name',
+            'colour', 'model', 'chassis_number', 'tracker', 'insurance', 'puc',
+            'seating_capacity', 'fuel_type', 'air_condition', 'owner'
+        ]
+        read_only_fields = ['id', 'owner']  # Owner will be set to the logged-in user
 
 
 class GPSTrackerSerializer(serializers.ModelSerializer):
@@ -48,63 +121,3 @@ class ZoneSerializer(serializers.ModelSerializer):
         model = Zone
         fields = '__all__'
 
-
-# class FleetOwnerRegisterSerializer(serializers.ModelSerializer):
-#     password = serializers.CharField(write_only=True)
-#
-#     class Meta:
-#         model = FleetOwner
-#         fields = ['first_name', 'last_name', 'email', 'password', 'contact_number', 'address', 'aadhar_number', 'pan_number', 'resident_proof']
-#
-#     def create(self, validated_data):
-#         validated_data['password'] = hashlib.sha256(validated_data['password'].encode()).hexdigest()
-#         return FleetOwner.objects.create(**validated_data)
-
-
-# class FleetOwnerLoginSerializer(serializers.Serializer):
-#     email = serializers.EmailField()
-#     password = serializers.CharField(write_only=True)
-#     tokens = serializers.DictField(read_only=True)
-#
-#     def validate(self, data):
-#         email = data.get('email')
-#         password = hashlib.sha256(data.get('password').encode()).hexdigest()
-#         user = FleetOwner.objects.filter(email=email, password=password).first()
-#         if not user:
-#             raise serializers.ValidationError("Invalid login credentials.")
-#         user.last_login = models.DateTimeField(auto_now=True)
-#         user.save()
-#         data['tokens'] = user.tokens()
-#         return data
-
-class FleetOwnerLoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    password = serializers.CharField(write_only=True)
-    tokens = serializers.DictField(read_only=True)
-
-    def validate(self, data):
-        email = data.get('email')
-        password = data.get('password')
-
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            raise serializers.ValidationError('Invalid credentials')
-
-        if not user.check_password(password):
-            raise serializers.ValidationError('Invalid credentials')
-
-        # Update last login field or any datetime-related field, if needed
-        user.last_login = timezone.now()  # Ensure you use timezone-aware datetime
-        user.save()
-        # Generate JWT tokens
-        refresh = AccessToken.for_user(user)
-        tokens = {
-            'refresh_token': str(refresh),
-            'access_token': str(refresh.access_token),
-        }
-
-        return {
-            'email': user.email,
-            'tokens': tokens
-        }

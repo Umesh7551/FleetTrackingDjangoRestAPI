@@ -42,13 +42,17 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'restapi_app',
     'rest_framework',
-    'rest_framework_simplejwt'
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',  # Optional for logout and token blacklisting
 ]
 
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
     ),
 
 }
@@ -61,6 +65,7 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
+    'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
 MIDDLEWARE = [
@@ -155,3 +160,12 @@ STATICFILES_DIRS = [STATICFILES_DIR,]
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # AUTH_USER_MODEL = 'restapi_app.FleetOwner'
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 465
+EMAIL_USE_TLS = False
+MAIL_USE_SSL = True
+EMAIL_HOST_USER = 'hindole.umesh@gmail.com'  # Your email address
+MAIL_DEFAULT_SENDER = 'hindole.umesh@gmail.com'
+EMAIL_HOST_PASSWORD = 'bjaf xqeg aycn mrmd'

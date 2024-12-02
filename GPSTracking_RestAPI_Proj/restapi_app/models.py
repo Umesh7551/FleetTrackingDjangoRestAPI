@@ -8,13 +8,13 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     fleetowner = models.ForeignKey(User, related_name='support_users', on_delete=models.CASCADE, null=True,
                                    blank=True)
-    address1 = models.CharField(max_length=255)
-    address2 = models.CharField(max_length=255, blank=True, null=True)
-    city = models.CharField(max_length=255)
-    state = models.CharField(max_length=255)
-    pin = models.CharField(max_length=6)
-    country = models.CharField(max_length=255)
-    mobile = models.CharField(max_length=15)
+    address1 = models.CharField(verbose_name='Address 1', max_length=255)
+    address2 = models.CharField(verbose_name='Address 2', max_length=255, blank=True, null=True)
+    city = models.CharField(verbose_name='City', max_length=255)
+    state = models.CharField(verbose_name='State', max_length=255)
+    pin = models.CharField(verbose_name='Pin', max_length=6)
+    country = models.CharField(verbose_name='Country', max_length=255)
+    mobile = models.CharField(verbose_name='Mobile', max_length=15)
     profile_photo = models.ImageField(verbose_name='Profile Photo', upload_to='profile_photos/')
 
     class Meta:
